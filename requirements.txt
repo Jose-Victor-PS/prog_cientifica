@@ -1,0 +1,4 @@
+PyQt5
+PyOpenGL
+matplotlib
+numpy
