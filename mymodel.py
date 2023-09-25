@@ -56,7 +56,7 @@ class MyModel:
         return self.m_curves
 
     def isEmpty(self):
-        return len(self.m_verts) == 0
+        return (len(self.m_verts) == 0) and (len(self.m_curves) == 0)
 
     def getBoundBox(self):
         if (len(self.m_verts) < 1) and (len(self.m_curves) < 1):

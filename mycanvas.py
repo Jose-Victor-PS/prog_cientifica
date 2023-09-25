@@ -17,8 +17,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_T = 1000.0
         self.list = None
         self.m_buttonPressed = False
-        self.m_pt0 = QtCore.QPoint(0.0, 0.0)
-        self.m_pt1 = QtCore.QPoint(0.0, 0.0)
+        self.m_pt0 = QtCore.QPoint(0, 0)
+        self.m_pt1 = QtCore.QPoint(0, 0)
 
     def initializeGL(self):
         glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -30,7 +30,7 @@ class MyCanvas(QtOpenGL.QGLWidget):
         # store GL canvas sizes in object properties
         self.m_w = _width
         self.m_h = _height
-        if(self.m_model==None) or (self.m_model.isEmpty()):
+        if(self.m_model is None) or (self.m_model.isEmpty()):
             self.scaleWorldWindow(1.0)
         else:
             self.m_L,self.m_R,self.m_B,self.m_T = self.m_model.getBoundBox()
@@ -51,7 +51,7 @@ class MyCanvas(QtOpenGL.QGLWidget):
     def paintGL(self):
         # clear the buffer with the current clear color
         glClear(GL_COLOR_BUFFER_BIT)
-        if (self.m_model==None) or (self.m_model.isEmpty()):
+        if (self.m_model is None) or (self.m_model.isEmpty()):
             return
         glCallList(self.list)
         glDeleteLists(self.list, 1)
@@ -66,7 +66,7 @@ class MyCanvas(QtOpenGL.QGLWidget):
         glVertex2f(pt0_U.x(), pt0_U.y())
         glVertex2f(pt1_U.x(), pt1_U.y())
         glEnd()
-        if not ((self.m_model == None) and (self.m_model.isEmpty())):
+        if not ((self.m_model == None) or (self.m_model.isEmpty())):
             verts = self.m_model.getVerts()
             glColor3f(0.0, 1.0, 0.0)  # green
             glBegin(GL_TRIANGLES)
