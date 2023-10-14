@@ -2,6 +2,11 @@ import sys
 from PyQt5 import QtOpenGL, QtCore
 from PyQt5.QtWidgets import *
 from OpenGL.GL import *
+from hetool.he.hecontroller import HeController
+from hetool.he.hemodel import HeModel
+from hetool.geometry.segments.line import Line
+from hetool.geometry.point import Point
+from hetool.compgeom.tesselation import Tesselation
 
 
 class MyCanvas(QtOpenGL.QGLWidget):
@@ -19,6 +24,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_buttonPressed = False
         self.m_pt0 = QtCore.QPoint(0, 0)
         self.m_pt1 = QtCore.QPoint(0, 0)
+        self.m_hmodel = HeModel()
+        self.m_controller = HeController(self.m_hmodel)
 
     def initializeGL(self):
         glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -80,6 +87,28 @@ class MyCanvas(QtOpenGL.QGLWidget):
                 glVertex2f(curv.getP1().getX(), curv.getP1().getY())
                 glVertex2f(curv.getP2().getX(), curv.getP2().getY())
             glEnd()
+        if not(self.m_hmodel.isEmpty()):
+            print('teste')
+            patches = self.m_hmodel.getPatches()
+            for pat in patches:
+                pts = pat.getPoints()
+                triangs = Tesselation.tessellate(pts)
+                for j in range(0, len(triangs)):
+                    glColor3f(1.0, 0.0, 1.0)
+                    glBegin(GL_TRIANGLES)
+                    glVertex2d(pts[triangs[j][0]].getX(), pts[triangs[j][0]].getY())
+                    glVertex2d(pts[triangs[j][1]].getX(), pts[triangs[j][1]].getY())
+                    glVertex2d(pts[triangs[j][2]].getX(), pts[triangs[j][2]].getY())
+                    glEnd()
+            segments = self.m_hmodel.getSegments()
+            for curv in segments:
+                ptc = curv.getPointsToDraw()
+                glColor3f(0.0, 1.0, 1.0)
+                glBegin(GL_LINES)
+                for curv in curves:
+                    glVertex2f(ptc[0].getX(), ptc[0].getY())
+                    glVertex2f(ptc[1].getX(), ptc[1].getY())
+                glEnd()
         glEndList()
 
     def setModel(self, _model):
@@ -159,6 +188,13 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_pt0.setY(0)
         self.m_pt1.setX(0)
         self.m_pt1.setY(0)
+
+        p0 = Point(pt0_U.x(), pt0_U.y())
+        p1 = Point(pt1_U.x(), pt1_U.y())
+        segment = Line(p0, p1)
+        self.m_controller.insertSegment(segment, 0.01)
+        self.update()
+        self.repaint()
 
 
 if __name__ == '__main__':
