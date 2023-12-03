@@ -38,10 +38,26 @@ class MyCurve:
         return self.m_p2
 
 
+class MyParticle:
+    def __init__(self,_pt=None,_r=None):
+        self.m_pt = _pt
+        self.m_r = _r
+
+    def setPt(self,_pt):
+        self.m_pt = _pt
+
+    def getPt(self):
+        return self.m_pt
+
+    def getR(self):
+        return self.m_r
+
+
 class MyModel:
     def __init__(self):
         self.m_verts = []
         self.m_curves = []
+        self.m_particles = []
 
     def setVerts(self, _x, _y):
         self.m_verts.append(MyPoint(_x, _y))
@@ -55,8 +71,14 @@ class MyModel:
     def getCurves(self):
         return self.m_curves
 
+    def setParticle(self, _x, _y):
+        self.m_particles.append(MyParticle(MyPoint(_x, _y), 50))
+
+    def getParticles(self):
+        return self.m_particles
+
     def isEmpty(self):
-        return (len(self.m_verts) == 0) and (len(self.m_curves) == 0)
+        return (len(self.m_verts) == 0) and (len(self.m_curves) == 0) and (len(self.m_particles) == 0)
 
     def getBoundBox(self):
         if (len(self.m_verts) < 1) and (len(self.m_curves) < 1):

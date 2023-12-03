@@ -7,13 +7,15 @@ from hetool.he.hemodel import HeModel
 from hetool.geometry.segments.line import Line
 from hetool.geometry.point import Point
 from hetool.compgeom.tesselation import Tesselation
+from math import *
 
 
 class MyCanvas(QtOpenGL.QGLWidget):
     def __init__(self):
         super(MyCanvas, self).__init__()
-        self.setGeometry(100,100,600,400)
-        self.setWindowTitle("MyGLDrawer")
+        self.setGeometry(100,100,1200,800)
+        self.setWindowTitle("Modelador")
+        self.setMouseTracking(True)
         self.m_w = 0 # width: GL canvas horizontal size
         self.m_h = 0 # height: GL canvas vertical size
         self.m_L = -1000.0
@@ -24,6 +26,12 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_buttonPressed = False
         self.m_pt0 = QtCore.QPoint(0, 0)
         self.m_pt1 = QtCore.QPoint(0, 0)
+        self.particle_hover = QtCore.QPoint(0, 0)
+        self.particle_pos = QtCore.QPoint(0, 0)
+
+        self.is_adding = False
+        self.is_modeling = True
+
         self.m_hmodel = HeModel()
         self.m_controller = HeController(self.m_hmodel)
 
@@ -58,7 +66,7 @@ class MyCanvas(QtOpenGL.QGLWidget):
     def paintGL(self):
         # clear the buffer with the current clear color
         glClear(GL_COLOR_BUFFER_BIT)
-        if (self.m_model is None) or (self.m_model.isEmpty()):
+        if ((self.m_model is None) or (self.m_model.isEmpty())) and not self.is_adding:
             return
         glCallList(self.list)
         glDeleteLists(self.list, 1)
@@ -87,8 +95,18 @@ class MyCanvas(QtOpenGL.QGLWidget):
                 glVertex2f(curv.getP1().getX(), curv.getP1().getY())
                 glVertex2f(curv.getP2().getX(), curv.getP2().getY())
             glEnd()
+            particles = self.m_model.getParticles()
+            glBegin(GL_POINTS)
+            for part in particles:
+                angle = 0.0
+                while angle <= 2.0 * pi:
+                    x = 50.0 * sin(angle)
+                    y = 50.0 * cos(angle)
+                    glVertex2d(x + part.getPt().getX(), y + part.getPt().getY())
+                    angle += 0.01
+            glEnd()
+
         if not(self.m_hmodel.isEmpty()):
-            print('teste')
             patches = self.m_hmodel.getPatches()
             for pat in patches:
                 pts = pat.getPoints()
@@ -109,6 +127,17 @@ class MyCanvas(QtOpenGL.QGLWidget):
                     glVertex2f(ptc[0].getX(), ptc[0].getY())
                     glVertex2f(ptc[1].getX(), ptc[1].getY())
                 glEnd()
+
+        if self.is_adding:
+            ptH = self.convertPtCoordsToUniverse(self.particle_hover)
+            glBegin(GL_POINTS)
+            angle = 0.0
+            while angle <= 2.0 * pi:
+                x = 50.0 * sin(angle)
+                y = 50.0 * cos(angle)
+                glVertex2d(x + ptH.x(), y + ptH.y())
+                angle += 0.01
+            glEnd()
         glEndList()
 
     def setModel(self, _model):
@@ -118,9 +147,19 @@ class MyCanvas(QtOpenGL.QGLWidget):
         print("fitWorldToViewport")
         if self.m_model is None:
             return
-        self.m_L,self.m_R,self.m_B,self.m_T=self.m_model.getBoundBox()
+        self.m_L, self.m_R, self.m_B, self.m_T = self.m_model.getBoundBox()
         self.scaleWorldWindow(1.10)
         self.update()
+
+    def addParticlesState(self):
+        print("particles")
+        self.is_adding = True
+        self.is_modeling = False
+
+    def modelLineState(self):
+        print("modeling")
+        self.is_modeling = True
+        self.is_adding = False
 
     def scaleWorldWindow(self, _scaleFac):
         # Compute canvas viewport distortion ratio.
@@ -172,27 +211,38 @@ class MyCanvas(QtOpenGL.QGLWidget):
 
     def mousePressEvent(self, event):
         self.m_buttonPressed = True
-        self.m_pt0 = event.pos()
+        if self.is_modeling:
+            self.m_pt0 = event.pos()
+        elif self.is_adding:
+            self.particle_pos = event.pos()
+            pt = self.convertPtCoordsToUniverse(self.particle_pos)
+            self.m_model.setParticle(pt.x(), pt.y())
 
     def mouseMoveEvent(self, event):
-        if self.m_buttonPressed:
-            self.m_pt1 = event.pos()
-            self.update()
+        if self.is_modeling:
+            if self.m_buttonPressed:
+                self.m_pt1 = event.pos()
+                self.update()
+        elif self.is_adding:
+            if not self.m_buttonPressed:
+                self.particle_hover = event.pos()
+                self.update()
 
     def mouseReleaseEvent(self, event):
-        pt0_U = self.convertPtCoordsToUniverse(self.m_pt0)
-        pt1_U = self.convertPtCoordsToUniverse(self.m_pt1)
-        self.m_model.setCurve(pt0_U.x(), pt0_U.y(), pt1_U.x(), pt1_U.y())
-        self.m_buttonPressed = False
-        self.m_pt0.setX(0)
-        self.m_pt0.setY(0)
-        self.m_pt1.setX(0)
-        self.m_pt1.setY(0)
+        if self.is_modeling:
+            pt0_U = self.convertPtCoordsToUniverse(self.m_pt0)
+            pt1_U = self.convertPtCoordsToUniverse(self.m_pt1)
+            self.m_model.setCurve(pt0_U.x(), pt0_U.y(), pt1_U.x(), pt1_U.y())
+            self.m_pt0.setX(0)
+            self.m_pt0.setY(0)
+            self.m_pt1.setX(0)
+            self.m_pt1.setY(0)
 
-        p0 = Point(pt0_U.x(), pt0_U.y())
-        p1 = Point(pt1_U.x(), pt1_U.y())
-        segment = Line(p0, p1)
-        self.m_controller.insertSegment(segment, 0.01)
+            p0 = Point(pt0_U.x(), pt0_U.y())
+            p1 = Point(pt1_U.x(), pt1_U.y())
+            segment = Line(p0, p1)
+            self.m_controller.insertSegment(segment, 0.01)
+        self.m_buttonPressed = False
         self.update()
         self.repaint()
 

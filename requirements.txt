@@ -2,3 +2,4 @@ PyQt5
 PyOpenGL
 matplotlib
 numpy
+jsonschema<4.0
