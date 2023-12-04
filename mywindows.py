@@ -22,6 +22,8 @@ class MyWindow(QMainWindow):
         tb.addAction(add_particle)
         model_line = QAction(QIcon("icons/model_line.png"), "model_line", self)
         tb.addAction(model_line)
+        fencing_pvc = QAction(QIcon("icons/fencing_pvc.png"), "fencing_pvc", self)
+        tb.addAction(fencing_pvc)
 
         tb.actionTriggered[QAction].connect(self.tbpressed)
 
@@ -32,3 +34,5 @@ class MyWindow(QMainWindow):
             self.canvas.addParticlesState()
         elif a.text() == "model_line":
             self.canvas.modelLineState()
+        elif a.text() == "fencing_pvc":
+            self.canvas.fencingPvcState()

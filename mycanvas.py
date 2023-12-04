@@ -28,9 +28,12 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_pt1 = QtCore.QPoint(0, 0)
         self.particle_hover = QtCore.QPoint(0, 0)
         self.particle_pos = QtCore.QPoint(0, 0)
+        self.fencing_pt0 = QtCore.QPoint(0, 0)
+        self.fencing_pt1 = QtCore.QPoint(0, 0)
 
         self.is_adding = False
         self.is_modeling = True
+        self.is_fencing_pvc = False
 
         self.m_hmodel = HeModel()
         self.m_controller = HeController(self.m_hmodel)
@@ -98,6 +101,10 @@ class MyCanvas(QtOpenGL.QGLWidget):
             particles = self.m_model.getParticles()
             glBegin(GL_POINTS)
             for part in particles:
+                if part.selected:
+                    glColor3f(1.0, 0.0, 0.0)
+                else:
+                    glColor3f(0.0, 0.0, 1.0)
                 angle = 0.0
                 while angle <= 2.0 * pi:
                     x = 50.0 * sin(angle)
@@ -105,6 +112,14 @@ class MyCanvas(QtOpenGL.QGLWidget):
                     glVertex2d(x + part.getPt().getX(), y + part.getPt().getY())
                     angle += 0.01
             glEnd()
+            fence = self.m_model.getFencePvc()
+            if fence is not None:
+                glBegin(GL_LINE_LOOP)
+                glVertex2f(fence.getLU().getX(), fence.getLU().getY())
+                glVertex2f(fence.getRU().getX(), fence.getRU().getY())
+                glVertex2f(fence.getRB().getX(), fence.getRB().getY())
+                glVertex2f(fence.getLB().getX(), fence.getLB().getY())
+                glEnd()
 
         if not(self.m_hmodel.isEmpty()):
             patches = self.m_hmodel.getPatches()
@@ -155,11 +170,19 @@ class MyCanvas(QtOpenGL.QGLWidget):
         print("particles")
         self.is_adding = True
         self.is_modeling = False
+        self.is_fencing_pvc = False
 
     def modelLineState(self):
         print("modeling")
         self.is_modeling = True
         self.is_adding = False
+        self.is_fencing_pvc = False
+
+    def fencingPvcState(self):
+        print("fencing_pvc")
+        self.is_modeling = False
+        self.is_adding = False
+        self.is_fencing_pvc = True
 
     def scaleWorldWindow(self, _scaleFac):
         # Compute canvas viewport distortion ratio.
@@ -217,6 +240,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
             self.particle_pos = event.pos()
             pt = self.convertPtCoordsToUniverse(self.particle_pos)
             self.m_model.setParticle(pt.x(), pt.y())
+        elif self.is_fencing_pvc:
+            self.fencing_pt0 = event.pos()
 
     def mouseMoveEvent(self, event):
         if self.is_modeling:
@@ -227,6 +252,16 @@ class MyCanvas(QtOpenGL.QGLWidget):
             if not self.m_buttonPressed:
                 self.particle_hover = event.pos()
                 self.update()
+        elif self.is_fencing_pvc:
+            if self.m_buttonPressed:
+                self.fencing_pt1 = event.pos()
+                self.update()
+                pt1 = self.convertPtCoordsToUniverse(self.fencing_pt1)
+                if self.m_model.getFencePvc() is None:
+                    pt0 = self.convertPtCoordsToUniverse(self.fencing_pt0)
+                    self.m_model.setFencePvc(pt0.x(), pt0.y(), pt1.x(), pt1.y())
+                else:
+                    self.m_model.getFencePvc().setRB(pt1.x(), pt1.y())
 
     def mouseReleaseEvent(self, event):
         if self.is_modeling:
@@ -242,6 +277,11 @@ class MyCanvas(QtOpenGL.QGLWidget):
             p1 = Point(pt1_U.x(), pt1_U.y())
             segment = Line(p0, p1)
             self.m_controller.insertSegment(segment, 0.01)
+        elif self.is_fencing_pvc:
+            self.m_model.unselectParticles()
+            self.m_model.selectParticles()
+            self.m_model.resetFencePvc()
+
         self.m_buttonPressed = False
         self.update()
         self.repaint()
