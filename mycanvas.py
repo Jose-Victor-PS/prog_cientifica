@@ -7,7 +7,9 @@ from hetool.he.hemodel import HeModel
 from hetool.geometry.segments.line import Line
 from hetool.geometry.point import Point
 from hetool.compgeom.tesselation import Tesselation
+from mydialog import TempDialog, SaveDialog
 from math import *
+import json
 
 
 class MyCanvas(QtOpenGL.QGLWidget):
@@ -183,6 +185,28 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.is_modeling = False
         self.is_adding = False
         self.is_fencing_pvc = True
+
+    def openTemperatureUI(self):
+        print("temperature")
+        self.dialog = TempDialog(self)
+        self.dialog.show()
+
+    def setParticlesTemperature(self, t):
+        particles = self.m_model.getParticles()
+        for part in particles:
+            if part.selected:
+                part.temperature = int(t)
+                part.knownTemperature = 1
+
+    def openSaveDialog(self):
+        print("save")
+        self.dialog = SaveDialog(self)
+        self.dialog.show()
+
+    def saveJsonFile(self, file_name):
+        data = {i: [p.knownTemperature, p.temperature] for i, p in enumerate(self.m_model.m_particles)}
+        with open(file_name, "w") as file:
+            file.write(json.dumps(data, indent=4))
 
     def scaleWorldWindow(self, _scaleFac):
         # Compute canvas viewport distortion ratio.

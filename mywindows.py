@@ -24,6 +24,10 @@ class MyWindow(QMainWindow):
         tb.addAction(model_line)
         fencing_pvc = QAction(QIcon("icons/fencing_pvc.png"), "fencing_pvc", self)
         tb.addAction(fencing_pvc)
+        temperature = QAction(QIcon("icons/temperature.png"), "temperature", self)
+        tb.addAction(temperature)
+        save_file = QAction(QIcon("icons/json_file"), "save_file", self)
+        tb.addAction(save_file)
 
         tb.actionTriggered[QAction].connect(self.tbpressed)
 
@@ -36,3 +40,7 @@ class MyWindow(QMainWindow):
             self.canvas.modelLineState()
         elif a.text() == "fencing_pvc":
             self.canvas.fencingPvcState()
+        elif a.text() == "temperature":
+            self.canvas.openTemperatureUI()
+        elif a.text() == "save_file":
+            self.canvas.openSaveDialog()

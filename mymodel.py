@@ -43,6 +43,9 @@ class MyParticle:
         self.m_pt = _pt
         self.m_r = _r
         self.selected = False
+        self.temperature = 0
+        self.knownTemperature = 0  # 0 nao conhece, 1 conhece sim
+        self.identifier = -1
 
     def setPt(self,_pt):
         self.m_pt = _pt
