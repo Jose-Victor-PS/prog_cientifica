@@ -6,7 +6,7 @@ class TempDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("Temperatura")
         self.setGeometry(800, 275, 300, 200)
-        self.threshNew = 0
+        self.temperatureNew = 0
         self.parentWidget = parent
 
         self.label = QLabel("Digite a Temperatura das Particulas")
@@ -14,7 +14,7 @@ class TempDialog(QDialog):
         self.spinBox = QDoubleSpinBox()
         self.spinBox.setMinimum(-300)
         self.spinBox.setMaximum(300)
-        self.spinBox.setValue(self.threshNew)
+        self.spinBox.setValue(self.temperatureNew)
         self.spinBox.setSingleStep(1)
         self.spinBox.valueChanged.connect(self.valueChanged)
 
@@ -34,12 +34,12 @@ class TempDialog(QDialog):
         cancelBtn.clicked.connect(self.reject)
 
     def valueChanged(self):
-        self.threshNew = self.spinBox.value()
-        # print("Changed: ", self.threshNew)
+        self.temperatureNew = self.spinBox.value()
+        # print("Changed: ", self.temperatureNew)
 
     def apply(self):
-        self.parentWidget.setParticlesTemperature(self.threshNew)
-        print("Temperatura escolhida: ", self.threshNew)
+        self.parentWidget.setParticlesTemperature(self.temperatureNew)
+        print("Temperatura escolhida: ", self.temperatureNew)
         self.close()
 
 

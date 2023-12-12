@@ -1,3 +1,5 @@
+import uuid
+
 class MyPoint:
     def __init__(self):
         self.m_x = 0
@@ -45,7 +47,7 @@ class MyParticle:
         self.selected = False
         self.temperature = 0
         self.knownTemperature = 0  # 0 nao conhece, 1 conhece sim
-        self.identifier = -1
+        self.identifier = uuid.uuid4()
 
     def setPt(self,_pt):
         self.m_pt = _pt
@@ -137,6 +139,69 @@ class MyModel:
     def unselectParticles(self):
         for p in self.m_particles:
             p.selected = False
+
+    def setUpGridFromUX(self):
+        lines = dict()  # Particle.X: [Particle.X, Particle2.X, Particle3.X...]
+        columns = dict()  # Particle.Y: [Particle.Y, Particle2.Y, Particle3.Y...]
+        for p in self.m_particles:
+            found_reference_particle = False
+            for k in lines.keys():  # Saber qual linha de particula ela pertence
+                if abs(p.getPt().getY() - k) <= 100:  # Da uma margem de erro de 2 raios, para particulas na mesma linha
+                    found_reference_particle = True
+                    lines[k].append(p)
+            if not found_reference_particle:
+                lines[p.getPt().getY()] = [p]
+
+            found_reference_particle = False
+            for k in columns.keys():  # Saber qual coluna de particula ela pertence
+                if abs(p.getPt().getX() - k) <= 100:  # Da uma margem de erro de 2 raios, para particulas na mesma coluna
+                    found_reference_particle = True
+                    columns[k].append(p)
+            if not found_reference_particle:
+                columns[p.getPt().getX()] = [p]
+
+        lines = dict(sorted(lines.items()))
+        columns = dict(sorted(columns.items()))
+
+        i = 1
+        copied_keys = list(lines.keys())
+        for k in copied_keys:
+            lines[i] = lines.pop(k)
+            i += 1
+        j = 1
+        copied_keys = list(columns.keys())
+        for k in copied_keys:
+            columns[j] = columns.pop(k)
+            j += 1
+
+        grid = [[0 for _ in range(len(columns.keys()))] for _ in range(len(lines.keys()))]
+        for i in range(1, len(grid) + 1):
+            for j in range(1, len(grid[i - 1]) + 1):
+                linha = lines[i]
+                col = columns[j]
+                for elem in linha:
+                    for elem2 in col:
+                        if elem.identifier == elem2.identifier:
+                            grid[i - 1][j - 1] = elem
+
+        for i in range(len(grid)):
+            for j in range(len(grid[i])):
+                if isinstance(grid[i][j], MyParticle):
+                    grid[i][j].identifier = (i * len(grid[i])) + (j + 1)
+
+        return grid
+
+    def setUpConnect(self, grid):
+        lines = len(grid)
+        columns = len(grid[0])
+        connect = [[0 for _ in range(5)] for _ in range(lines * columns)]
+        for i in range(len(connect)):
+            connect[i][-1] = i + 1
+            connect[i][0] = 0 if i % columns == 0 else i
+            connect[i][1] = 0 if (i + 1) % columns == 0 else i + 2
+            connect[i][2] = 0 if i - columns + 1 <= 0 else i - columns + 1
+            connect[i][3] = 0 if i + columns + 1 > lines * columns else i + columns + 1
+        return connect
 
     def isEmpty(self):
         return (len(self.m_verts) == 0) and (len(self.m_curves) == 0) and (len(self.m_particles) == 0)

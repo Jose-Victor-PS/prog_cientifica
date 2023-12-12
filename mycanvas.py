@@ -10,6 +10,7 @@ from hetool.compgeom.tesselation import Tesselation
 from mydialog import TempDialog, SaveDialog
 from math import *
 import json
+from mdf_solver import solve_mdf
 
 
 class MyCanvas(QtOpenGL.QGLWidget):
@@ -36,6 +37,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.is_adding = False
         self.is_modeling = True
         self.is_fencing_pvc = False
+
+        self.pvc_filename = ""
 
         self.m_hmodel = HeModel()
         self.m_controller = HeController(self.m_hmodel)
@@ -204,9 +207,20 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.dialog.show()
 
     def saveJsonFile(self, file_name):
-        data = {i: [p.knownTemperature, p.temperature] for i, p in enumerate(self.m_model.m_particles)}
+        grid = self.m_model.setUpGridFromUX()
+        connect = self.m_model.setUpConnect(grid)
+        data = {"temperatures": {p.identifier: [p.knownTemperature, p.temperature] for i, p in enumerate(self.m_model.m_particles)},
+                "coonect": connect}
+        data["temperatures"] = dict(sorted(data["temperatures"].items()))
         with open(file_name, "w") as file:
             file.write(json.dumps(data, indent=4))
+        self.pvc_filename = file_name
+
+    def runMdfSolver(self):
+        if self.pvc_filename == "":
+            print("Arquivo para PVC nao selecione. Salve um arquivo PVC para poder executar o metodo MDF.")
+            return
+        solve_mdf(self.pvc_filename)
 
     def scaleWorldWindow(self, _scaleFac):
         # Compute canvas viewport distortion ratio.

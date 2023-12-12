@@ -28,6 +28,8 @@ class MyWindow(QMainWindow):
         tb.addAction(temperature)
         save_file = QAction(QIcon("icons/json_file"), "save_file", self)
         tb.addAction(save_file)
+        run_mdf = QAction(QIcon("icons/run_mdf"), "run_mdf", self)
+        tb.addAction(run_mdf)
 
         tb.actionTriggered[QAction].connect(self.tbpressed)
 
@@ -44,3 +46,5 @@ class MyWindow(QMainWindow):
             self.canvas.openTemperatureUI()
         elif a.text() == "save_file":
             self.canvas.openSaveDialog()
+        elif a.text() == "run_mdf":
+            self.canvas.runMdfSolver()
