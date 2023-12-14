@@ -48,6 +48,10 @@ class MyParticle:
         self.temperature = 0
         self.knownTemperature = 0  # 0 nao conhece, 1 conhece sim
         self.identifier = uuid.uuid4()
+        self.restr_x = 0
+        self.restr_y = 0
+        self.forces_x = 0
+        self.forces_y = 0
 
     def setPt(self,_pt):
         self.m_pt = _pt
@@ -174,6 +178,7 @@ class MyModel:
             columns[j] = columns.pop(k)
             j += 1
 
+        # Para cruzar as infos de linha X coluna, e saber ao mesmo tempo qual linha e coluna eh a particula
         grid = [[0 for _ in range(len(columns.keys()))] for _ in range(len(lines.keys()))]
         for i in range(1, len(grid) + 1):
             for j in range(1, len(grid[i - 1]) + 1):

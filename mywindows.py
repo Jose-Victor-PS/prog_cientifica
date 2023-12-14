@@ -26,10 +26,18 @@ class MyWindow(QMainWindow):
         tb.addAction(fencing_pvc)
         temperature = QAction(QIcon("icons/temperature.png"), "temperature", self)
         tb.addAction(temperature)
-        save_file = QAction(QIcon("icons/json_file"), "save_file", self)
+        save_file = QAction(QIcon("icons/json_file.png"), "save_file", self)
         tb.addAction(save_file)
-        run_mdf = QAction(QIcon("icons/run_mdf"), "run_mdf", self)
+        run_mdf = QAction(QIcon("icons/run_mdf.png"), "run_mdf", self)
         tb.addAction(run_mdf)
+        restr = QAction(QIcon("icons/restr.png"), "restr", self)
+        tb.addAction(restr)
+        forces = QAction(QIcon("icons/forces.png"), "forces", self)
+        tb.addAction(forces)
+        elasticity = QAction(QIcon("icons/elastic.png"), "elasticity", self)
+        tb.addAction(elasticity)
+        weight = QAction(QIcon("icons/weight.png"), "weight", self)
+        tb.addAction(weight)
 
         tb.actionTriggered[QAction].connect(self.tbpressed)
 
@@ -48,3 +56,11 @@ class MyWindow(QMainWindow):
             self.canvas.openSaveDialog()
         elif a.text() == "run_mdf":
             self.canvas.runMdfSolver()
+        elif a.text() == "restr":
+            self.canvas.openRestrDialog()
+        elif a.text() == "forces":
+            self.canvas.openForcesDialog()
+        elif a.text() == "elasticity":
+            self.canvas.openElasticityDialog()
+        elif a.text() == "weight":
+            self.canvas.openWeightDialog()

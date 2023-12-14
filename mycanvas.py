@@ -7,10 +7,11 @@ from hetool.he.hemodel import HeModel
 from hetool.geometry.segments.line import Line
 from hetool.geometry.point import Point
 from hetool.compgeom.tesselation import Tesselation
-from mydialog import TempDialog, SaveDialog
+from mydialog import TempDialog, SaveDialog, RestrDialog, ForcesDialog, ElasticDialog, WeightDialog
 from math import *
 import json
 from mdf_solver import solve_mdf
+from pvi_solver import solve_pvi
 
 
 class MyCanvas(QtOpenGL.QGLWidget):
@@ -19,8 +20,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.setGeometry(100,100,1200,800)
         self.setWindowTitle("Modelador")
         self.setMouseTracking(True)
-        self.m_w = 0 # width: GL canvas horizontal size
-        self.m_h = 0 # height: GL canvas vertical size
+        self.m_w = 0  # width: GL canvas horizontal size
+        self.m_h = 0  # height: GL canvas vertical size
         self.m_L = -1000.0
         self.m_R = 1000.0
         self.m_B = -1000.0
@@ -39,6 +40,10 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.is_fencing_pvc = False
 
         self.pvc_filename = ""
+        self.pvi_filename = ""
+        self.particle_radius = 50
+        self.particle_k = 0
+        self.particle_m = 0
 
         self.m_hmodel = HeModel()
         self.m_controller = HeController(self.m_hmodel)
@@ -112,8 +117,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
                     glColor3f(0.0, 0.0, 1.0)
                 angle = 0.0
                 while angle <= 2.0 * pi:
-                    x = 50.0 * sin(angle)
-                    y = 50.0 * cos(angle)
+                    x = self.particle_radius * sin(angle)
+                    y = self.particle_radius * cos(angle)
                     glVertex2d(x + part.getPt().getX(), y + part.getPt().getY())
                     angle += 0.01
             glEnd()
@@ -153,8 +158,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
             glBegin(GL_POINTS)
             angle = 0.0
             while angle <= 2.0 * pi:
-                x = 50.0 * sin(angle)
-                y = 50.0 * cos(angle)
+                x = self.particle_radius * sin(angle)
+                y = self.particle_radius * cos(angle)
                 glVertex2d(x + ptH.x(), y + ptH.y())
                 angle += 0.01
             glEnd()
@@ -212,15 +217,72 @@ class MyCanvas(QtOpenGL.QGLWidget):
         data = {"temperatures": {p.identifier: [p.knownTemperature, p.temperature] for i, p in enumerate(self.m_model.m_particles)},
                 "coonect": connect}
         data["temperatures"] = dict(sorted(data["temperatures"].items()))
-        with open(file_name, "w") as file:
+        with open(file_name + "_pvc.json", "w") as file:
             file.write(json.dumps(data, indent=4))
-        self.pvc_filename = file_name
+
+        particles = sorted(self.m_model.m_particles, key=lambda x: x.identifier)
+        data = {"coords": [[p.getPt().getX(), p.getPt().getY()] for p in particles],
+                "forces": [[p.forces_x, p.forces_y] for p in particles],
+                "restrs": [[p.restr_x, p.restr_y] for p in particles],
+                "connect": connect,
+                "r": 5,
+                "k": self.particle_k,
+                "m": self.particle_m}
+        with open(file_name + "_pvi.json", "w") as file:
+            file.write(json.dumps(data, indent=4))
+
+        self.pvc_filename = file_name + "_pvc.json"
+        self.pvi_filename = file_name + "_pvi.json"
 
     def runMdfSolver(self):
-        if self.pvc_filename == "":
-            print("Arquivo para PVC nao selecione. Salve um arquivo PVC para poder executar o metodo MDF.")
+        if self.pvc_filename == "" or self.pvi_filename == "":
+            print("Arquivo para PVC e PVI nao selecione. Salve um arquivo para poder executar o metodo MDF e o Leap Frog.")
             return
         solve_mdf(self.pvc_filename)
+        solve_pvi(self.pvi_filename)
+
+
+    def openRestrDialog(self):
+        print("restr")
+        self.dialog = RestrDialog(self)
+        self.dialog.show()
+
+    def applyRestr(self, x, y):
+        particles = self.m_model.getParticles()
+        for part in particles:
+            if part.selected:
+                if x:
+                    part.restr_x = 1
+                if y:
+                    part.restr_y = 1
+
+    def openForcesDialog(self):
+        print("forces")
+        self.dialog = ForcesDialog(self)
+        self.dialog.show()
+
+    def setForcesOnParticles(self, force_x, force_y):
+        particles = self.m_model.getParticles()
+        for part in particles:
+            if part.selected:
+                part.forces_x = force_x
+                part.forces_y = force_y
+
+    def openElasticityDialog(self):
+        print("elastic")
+        self.dialog = ElasticDialog(self)
+        self.dialog.show()
+
+    def setElasticity(self, k):
+        self.particle_k = k
+
+    def openWeightDialog(self):
+        print("weight")
+        self.dialog = WeightDialog(self)
+        self.dialog.show()
+
+    def setWeight(self, m):
+        self.particle_m = m
 
     def scaleWorldWindow(self, _scaleFac):
         # Compute canvas viewport distortion ratio.
